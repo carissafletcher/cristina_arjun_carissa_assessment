@@ -1,0 +1,4 @@
+biopython==1.78
+matplotlib==3.3.3
+randfacts==0.2.6
+requests==2.25.1
