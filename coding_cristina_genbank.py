@@ -5,7 +5,7 @@ import os  # For management of input and output files
 import time  # To enable time delay between query status checks
 import xml.etree.ElementTree as ET  # To enable .xml manipulation
 
-import randfacts  # To alleviate boredom during BLAST searches
+# import randfacts  # To alleviate boredom during BLAST searches
 import requests  # To query web services
 import matplotlib.pyplot as plt # To generate figure of phylogenetic tree
 
@@ -17,11 +17,13 @@ from Bio.Seq import Seq
 
 
  # User defines a name for the query (NM_ number, this depends on Carissa's code)
-def get_query_name():
+def get_query_name(query_name):
     # User defines a name for the query
-    query_name = input('Please enter a name for this query: ')
-    while not query_name:
-        query_name = input('Please enter a name for this query: ')
+    # query_name = input('Please enter a name for this query: ')
+    # while not query_name:
+        # query_name = input('Please enter a name for this query: ')
+    
+    
     
     current_dir = os.getcwd() #Directory 
     path_name = current_dir + '/' + query_name
@@ -97,17 +99,18 @@ def translate_cds_seq():
              file.write(sequence)
 
 
-get_query_name()
+'''get_query_name('test1')'''
 
-genome_record = SeqIO.read("/Users/carlossilvestreroig/Desktop/Python_API/adjuntos/NM_005816.gb", "genbank") #this should be query_name
-cds_feature = get_cds_feature_with_qualifier_value(genome_record, "protein_id", "NP_005807.1")
+
+
+
+
+# genome_record = SeqIO.read("/Users/carlossilvestreroig/Desktop/Python_API/adjuntos/NM_005816.gb", "genbank") #this should be query_name
+# cds_feature = get_cds_feature_with_qualifier_value(genome_record, "protein_id", "NP_005807.1")
 
 #I create a dictionary:
 #Dictionary_sequences = {'cdna' = cdna, 
                        # 'protein'}
 
-extract_cds()
-translate_cds_seq()
-
-
-
+# extract_cds()
+# translate_cds_seq()
