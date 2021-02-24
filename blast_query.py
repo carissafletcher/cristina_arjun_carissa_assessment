@@ -12,9 +12,9 @@ Entrez.email = "arjunryatt@hotmail.co.uk"
 
 print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>< Hello! ><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
 
-def get_transcript_info(transcript_id):
+def get_transcript_info(transcript_id, path_name):
 
-    while transcript_id.startswith("NM"):
+    if transcript_id.startswith("NM"):
 
         handle = Entrez.efetch(db="nucleotide", id=transcript_id, rettype="gb", retmode="text")
         # Parse the handle into a SeqRecord object called record
@@ -48,6 +48,9 @@ def get_transcript_info(transcript_id):
         d1['translation']['prot'] = record.features[element].qualifiers['translation'][0]
     
         return d1
+    
+    else:
+        return 'Protein-coding transcripts only! Please enter a RefSeq accession number that starts with "NM_".'
 
 
 def blast_search(query_sequence):
@@ -58,6 +61,8 @@ def blast_search(query_sequence):
     blast_results = result_handle.read()
     result_handle.close()
     
+    # return blast_results
+    
     query_name = 'msa_project'
     path_name = os.getcwd()
     output_file = query_name + '_blast_output.xml'
@@ -66,8 +71,6 @@ def blast_search(query_sequence):
     with open(output_path, 'w') as save_file:
         save_file.write(blast_results)
     
-    print('open '+output_path)
-
     return output_path
 
 print(">>>>>>>>>>>>>>>>>>>>>>>>>>< Compiling Transcript Dictionary ><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
@@ -79,7 +82,10 @@ print(transcript_dictionary)
 
 print(">>>>>>>>>>>>>>>>>>< Running Multiple Sequence Alignments through BLASTN ><<<<<<<<<<<<<<<<<<<<<<")
 
-query_sequence_test = transcript_dictionary['cdna']
+# query_sequence_test = transcript_dictionary['cdna']
+
+query_sequence_test = transcript_dictionary['translation']['prot']
+
 test = blast_search(query_sequence_test)
 
 print(test)
