@@ -5,6 +5,7 @@ import requests  # To query web services
 import matplotlib.pyplot as plt # To generate figure of phylogenetic tree
 import os, shutil  # For management of input and output files
 import json, re
+import time  # To enable time delay between query status checks
 from Bio import Entrez, SeqIO, Phylo  # To get NCBI records and manipulate sequences
 from Bio.Blast import NCBIWWW  # To query NCBI BLAST
 
@@ -206,26 +207,93 @@ def top10_hits_fasta(top_hit_dictionary):
     with open(output_path, 'w') as save_file:
         save_file.write(fasta_record)
 
-    return fasta_record
+    return fasta_record, output_path
     
-def homologene(gene_symbol):
 
-    search_handle = Entrez.esearch(db='homologene', term=(gene_symbol + '[Gene Name] AND Homo sapiens[Organism]'))
-    search_record = Entrez.read(search_handle)
-    search_handle.close()
+
+def clustal_omega_MSA(email_address, fasta_path):
+    """Use the formatted FASTA file from Homologene as input to Clustal Omega
+    to create a multiple sequence alignment. Output the MSA as a text file.
+
+    Args:
+        homologues_path ([file path]): Path to .fasta file containing
+        homologous protein sequences.
+        gene_symbol ([string]): Relevant human gene symbol for homologous
+        proteins.
+        path_name ([file path]): Path to directory where output .txt file will
+        be stored.
+        email_address ([string]): Required to access Clustal Omega API.
+
+    Returns:
+        msa [string]: Multiple sequence alignment of homologous protein
+        sequences.
+    """
+    # Open the .fasta file of homologous protein sequences
+    with open(fasta_path,'r') as homologues_object:
+        fasta_transcripts = homologues_object.read()
+
+    # Submit request to Clustal Omega
+    print("\nSending request to Clustal Omega.")
+    run = ''
+    while not str(run) == '<Response [200]>':
+        run = requests.post(
+            'https://www.ebi.ac.uk/Tools/services/rest/clustalo/run',
+            data = {'email':email_address, 'sequence':fasta_transcripts})
+        # Exception Handling to catch if email is invalid
+        try:
+            run.raise_for_status()
+        except requests.exceptions.HTTPError:
+            print('Error whilst submitting query.',
+            'Please ensure email address is valid.')
+
+    # Decode job ID
+    job_id_bytes = run.content
+    job_id = job_id_bytes.decode('utf-8')
+
+    # Get status of submitted Clustal Omega job
+    status_request = requests.get(
+        'https://www.ebi.ac.uk/Tools/services/rest/clustalo/status/'
+        + str(job_id))
+    status = (status_request.content).decode('utf-8')
+
+    # Check status every 10 seconds
+    while status != "FINISHED":
+        status_request = requests.get(
+            'https://www.ebi.ac.uk/Tools/services/rest/clustalo/status/'
+            + str(job_id))
+        status = (status_request.content).decode('utf-8')
+        print(status)
+        if status == "RUNNING":
+            time.sleep(10)
+            
+    query_name = 'HOMOLOGUES'
+    current_dir = os.getcwd()
+    path_name = current_dir + '/NP_009229.2'
     
-    hg_id = search_record['IdList'][0]
-    fasta_handle = Entrez.efetch(db='homologene', id = hg_id, rettype = 'fasta', retmode='text')
-    fasta_record = fasta_handle.read()
-    fasta_handle.close()
 
-    # Identify the start of the first protein sequence header and remove
-    # everything preceding it
-    first_seq = int(fasta_record.find('>'))
-    clipped_fasta_record = (fasta_record[first_seq:]).strip()
-    fasta_file = gene_symbol + '_raw_homologues.fasta'
-   
-    return clipped_fasta_record
+    # Get msa results from Clustal Omega once completed
+    msa_request = requests.get(
+        'https://www.ebi.ac.uk/Tools/services/rest/clustalo/result/'
+        + str(job_id) +'/aln-clustal_num')
+    msa = (msa_request.content).decode('utf-8')
+    
+    # Define path to output text file
+    job_name = 'NM_007298.3'
+    current_dir = os.getcwd()
+    path_name = current_dir + '/NM_007298.3'
+    
+    if os.path.exists(path_name):
+        msa_file = job_name + '_msa.aln'
+        msa_path = os.path.join(path_name, msa_file)
+    else:
+        msa_file = job_name + '.fasta'
+        msa_path = os.path.join(current_dir, msa_file)
+
+    # Write output text file
+    with open(msa_path, 'w') as msa_file_object:
+        msa_file_object.write(msa)
+    
+    return msa
 
 print(">>>>>>>>>>>>>>>>>>>>>>>>>>< Compiling Transcript Dictionary ><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
 
@@ -234,19 +302,26 @@ transcript_dictionary = get_transcript_info(transcript_id)
 print(transcript_dictionary)
 
 
-'''print(">>>>>>>>>>>>>>>>>>< Running Multiple Sequence Alignments through BLASTN ><<<<<<<<<<<<<<<<<<<<<<")
+print(">>>>>>>>>>>>>>>>>>< Running Multiple Sequence Alignments through BLASTN ><<<<<<<<<<<<<<<<<<<<<<")
 
 query_sequence_test = transcript_dictionary['cdna']
 blastn, blast_dictionary = blastn_search(query_sequence_test)
-print(blast_dictionary)'''
+print(blast_dictionary)
 
-print(">>>>>>>>>>>>>>>>>>>>>>>>>>< Getting Protein sequences from BLASTP ><<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+'''print(">>>>>>>>>>>>>>>>>>>>>>>>>>< Getting Protein sequences from BLASTP ><<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
 
 query_sequence_test = transcript_dictionary['translation']['prot']
 blastp, blast_dictionary = blastp_search(query_sequence_test)
-print(blast_dictionary)
+print(blast_dictionary)'''
 
-print(">>>>>>>>>>>>>>>>>>>>>>>< Preparing FASTA of transcript homologues ><<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+print(">>>>>>>>>>>>>>>>>>>>>>>< Preparing FASTA of homologous sequences ><<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
 
-top_10_transcripts = top10_hits_fasta(blastp)
+top_10_transcripts, fasta_path = top10_hits_fasta(blastn)
 print(top_10_transcripts)
+
+print(">>>>>>>>>>>>>>>>>>>>>>>>>>>< Preparing MSA with ClustalOmega ><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+
+email_address = 'arjunryatt@hotmail.co.uk'
+clustal_omega_MSA(email_address, fasta_path)
+
+print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>< End of script. Goodbye! ><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
