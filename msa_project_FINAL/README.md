@@ -4,7 +4,7 @@
 ### User story:
 As a bioinformatics trainee, I want to create an API that performs an MSA with as little user input as possible. Clinically valid conservation analyses should be able to use the output files from this API." 
                 
-### Introduction
+### **Introduction**
 MSA is a tool that creates Multiple Sequence Alignments (MSA) and analyses protein coding sequences of DNA and their respective amino acid sequences, across different species.
 
 To use this tool the input must be a Refseq accession number that corresponds with a record in Genbank. Accession numbers must begin with the prefix NM_. The NM_ prefix corresponds to protein-coding transcript records in RefSeq.

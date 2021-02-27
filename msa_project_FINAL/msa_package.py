@@ -9,7 +9,7 @@ Cristina Garcia Moratalla :
 Given a RefSeq NM_ accession number:
 
 1. Generate a dictionary with transcript and protein sequences and IDs. Create directory for outputs.
-2. Submit either the nucleotide sequence or amino acid sequence as string to the BLAST API using Biopython NCBIWWW. Save XML file to respective directory.
+2. Submit either the nucleotide sequence or amino acid sequence to the BLAST API using Biopython NCBIWWW. Save XML file to respective directory.
 3. Extract relevant information from BLAST XML output. Compile dictionary of the top 10 most homologous sequences.
 4. Generate .fasta file consisting of homologous sequences in FASTA format by querying RefSeq using the Entrez module from the Bio package. Save output .fasta file to the same directory that contains the BLAST put XML file.
 5. Construct a multiple-sequence alignment using Clustal Omega. Save the multiple-sequence alignment in the same directory as the BLAST XML file and .fasta file.
@@ -28,7 +28,7 @@ from Bio.Blast import NCBIWWW  # To query NCBI BLAST
 print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>< Hello! ><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
 
 def get_transcript_info(transcript_id):
-    """User inputs an NM_ accession number by direct entry of a string into the Ref_Seq_ID field in the Swagger UI. This should only identify protein-coding transcripts in Genbank. If a corresponding record is found, a dictionary is created which contains the RefSeq transcript ID, cDNA sequence, the RefSeq ID of what is translated by this transcript and the sequence of the corresponding protein.
+    """User enters an NM_ accession number into the Ref_Seq_ID field in the Swagger UI. This should only identify protein-coding transcripts in Genbank. If a corresponding record is found, a dictionary is created which contains the RefSeq transcript ID, cDNA sequence, the RefSeq ID of what is translated by this transcript and the sequence of the corresponding protein.
 
     Returns:
         d1 [dictionary]: A dictionary containing the relevant information to be queried using BLASTn or BLASTp.
@@ -36,7 +36,7 @@ def get_transcript_info(transcript_id):
     # The function will only proceed if the user's input begins with 'NM_'.
     if transcript_id.startswith("NM"):
 
-        #Using, Entrez.efetch, the nucleotide database in Genbank is queried using the NM_ number.
+        #Using Entrez.efetch, the nucleotide database in Genbank is queried using the NM_ number.
         handle = Entrez.efetch(db="nucleotide", id=transcript_id, rettype="gb", retmode="text")
         # Parse the handle into a SeqRecord object called 'record'.
         record = SeqIO.read(handle, "gb")
@@ -69,7 +69,7 @@ def get_transcript_info(transcript_id):
         # Creates 'id' key and 'prot' key, in the 'translation' dictionary of d1. Assigns the RefSeq ID of what is translated by this transcript and the sequence of the corresponding protein to the respective key.
         d1['translation']['id'] = record.features[element].qualifiers['protein_id'][0]
         d1['translation']['prot'] = record.features[element].qualifiers['translation'][0]
-    
+        # Returns the nucleotide and amino acid sequences, as well as their respective RefSeq accession numbers.
         return d1
     
     # If what is entered by the user does not begin with 'NM_', the script stops functioning.
@@ -89,7 +89,7 @@ def blastn_search(query_sequence, transcript_id):
         transcript_id ([string]): RefSeq accession number of transcript entered by user.
 
     Returns:
-        blast_top10 [dictionary]: A dictionary consisting of the top 10 sequences from the BLAST output, that share the highest percentage of identity with the query sequence.
+        blast_top10 ([dictionary]): A dictionary consisting of the top 10 sequences from the BLAST output, that share the highest percentage of identity with the query sequence.
     """
 
 

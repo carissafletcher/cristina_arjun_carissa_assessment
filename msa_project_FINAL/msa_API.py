@@ -1,33 +1,17 @@
-from Bio import Entrez  # To get NCBI records and manipulate sequences
-from Bio import SeqIO  # To get NCBI records and manipulate sequences
-from Bio import Phylo  # To get NCBI records and manipulate sequences
-from Bio.Blast import NCBIWWW  # To query NCBI BLAST
-import xml.etree.ElementTree as ET  # To enable .xml manipulation
-from flask import Flask
-from flask_restplus import Api
-from flask_restplus import Resource
-import os # For management of input and output files
-import sys
-import requests  # To query web services
-import json
-import re
-import socket
-from socket import gaierror
-import urllib
-from urllib.error import URLError
-from urllib.error import HTTPError
-from urllib.request import urlopen
-from requests.exceptions import HTTPError
-from requests.exceptions import ConnectionError
-# from requests.exceptions import HTTPError
-import logging
-import logging.handlers as handlers
-import time
-from msa_package import get_transcript_info
-from msa_package import blastn_search
-from msa_package import blastp_search
-from msa_package import top10_hits_fasta
-from msa_package import clustal_omega_MSA
+#!/usr/bin/env python
+
+from Bio import Entrez  # To assign an e-mail address before querying NCBI.
+from flask import Flask # Provides the framework that the API is based on.
+from flask_restplus import Api # Provides the tools to dsign the API.
+from flask_restplus import Resource #Allows the designer to create a RESTful API.
+import logging # Creates a log of certain error messages such as warnings and exceptions. Designs basic parameter of the log.
+import logging.handlers as handlers # Provides more functionality to the log.
+import time #Records the date and time that a function is executed occurs or a response is returned.
+from msa_package import get_transcript_info # Compiles a dictionary of the input transcript.
+from msa_package import blastn_search # Searches BLASTN for homolgous nucleotide sequences across different species and generates a dictionary of the top 10 most identitical sequences in RefSeq.
+from msa_package import blastp_search # Searches BLASTP for homolgous amino acid sequences across different species and generates a dictionary of the top 10 most identitical sequences in RefSeq.
+from msa_package import top10_hits_fasta # Provides the sequences from the top 10 list in FASTA format.
+from msa_package import clustal_omega_MSA # Performs the multi-sequence alignment.
 
 """
 This API queries Genbank using NM_ numbers from RefSeq. Using NCBI's BLAST tool, the API returns a list of the top 10 most closely related orthologues, as well as their corresponding sequences formated into a .FASTA file. The Clustal Omega API is then used to perform a Multi-Sequence Alignment of the sequences in the .FASTA file.
