@@ -9,7 +9,8 @@ import time  # To enable time delay between query status checks
 from Bio import Entrez, SeqIO, Phylo  # To get NCBI records and manipulate sequences
 from Bio.Blast import NCBIWWW  # To query NCBI BLAST
 
-Entrez.email = "arjunryatt@hotmail.co.uk"
+print('http://127.0.0.1:5000/')
+
 
 print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>< Hello! ><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
 
@@ -57,7 +58,7 @@ def get_transcript_info(transcript_id):
         return 'Protein-coding transcripts only! Please enter a RefSeq accession number that starts with "NM_".'
 
 
-def blastn_search(query_sequence):
+def blastn_search(query_sequence, transcript_id):
     
     # Submit query sequence to NCBI BLASTN and read results. BLAST returns results in XML format
     
@@ -67,13 +68,12 @@ def blastn_search(query_sequence):
     
     # return blast_results
     
-    query_name = 'NM_007298.3'
+    query_name = transcript_id
     current_dir = os.getcwd()
     path_name = current_dir + '/' + query_name
     
     if os.path.exists(path_name):
-        shutil.rmtree(path_name)
-        os.mkdir(path_name)
+        pass
     else:
         os.mkdir(path_name)
         
@@ -116,12 +116,9 @@ def blastn_search(query_sequence):
         if val in blast_closest_hits[:10]:
             blast_top10[RefSeq_ID] = val
 
+    return blast_top10
     
-    output = json.dumps(blast_top10, sort_keys=True, indent=4, separators=(',', ':'))
-
-    return blast_top10, output
-    
-def blastp_search(query_sequence):
+def blastp_search(query_sequence, transcript_id, translation_id):
     
     # Submit query sequence to NCBI BLASTP and read results
     
@@ -129,18 +126,21 @@ def blastp_search(query_sequence):
     blast_results = result_handle.read()
     result_handle.close()
     
-    query_name = 'NP_009229.2'
+    query_name = transcript_id
     current_dir = os.getcwd()
     path_name = current_dir + '/' + query_name
     
     if os.path.exists(path_name):
-        shutil.rmtree(path_name)
-        os.mkdir(path_name)
+        if os.path.exists(path_name + '/' + translation_id):
+            pass
+        else:
+            os.mkdir(path_name + '/' + translation_id)
     else:
         os.mkdir(path_name)
+        os.mkdir(path_name + '/' + translation_id)
     
-    output_file = query_name + '_blastp_output.xml'
-    output_path = os.path.join(path_name, output_file)
+    output_file = translation_id + '_blastp_output.xml'
+    output_path = os.path.join(path_name, translation_id, output_file)
     
     with open(output_path, 'w') as save_file:
         save_file.write(blast_results)
@@ -178,40 +178,37 @@ def blastp_search(query_sequence):
         if val in blast_closest_hits[:10]:
             blast_top10[RefSeq_ID] = val
 
+    return blast_top10
     
-    output = json.dumps(blast_top10, sort_keys=True, indent=4, separators=(',', ':'))
-
-    return blast_top10, output
-    
-def top10_hits_fasta(top_hit_dictionary):
+def top10_hits_fasta(top_hit_dictionary, transcript_id, sequence_type, translation_id):
 
     accession_numbers = []
     for key, val in top_hit_dictionary.items():
         accession_numbers.append(key)
 
-    fasta_handle = Entrez.efetch(db='Protein', id = accession_numbers, rettype = 'fasta', retmode='text')
+    fasta_handle = Entrez.efetch(db = sequence_type, id = accession_numbers, rettype = 'fasta', retmode='text')
     fasta_record = fasta_handle.read()
     fasta_handle.close()
 
-    query_name = 'HOMOLOGUES'
+    query_name = transcript_id + '_HOMOLOGUES'
     current_dir = os.getcwd()
-    path_name = current_dir + '/NP_009229.2'
+    path_name = current_dir + '/' + transcript_id
     
-    if os.path.exists(path_name):
-        output_file = query_name + '.fasta'
-        output_path = os.path.join(path_name, output_file)
-    else:
-        output_file = query_name + '.fasta'
-        output_path = os.path.join(current_dir, output_file)
+    if sequence_type == 'nucleotide':
+        fasta_file = query_name + '.fasta'
+        fasta_path = os.path.join(path_name, fasta_file)
+    elif sequence_type == 'Protein':
+        fasta_file = translation_id + '_HOMOLOGUES.fasta'
+        fasta_path = os.path.join(path_name, translation_id, fasta_file)
         
-    with open(output_path, 'w') as save_file:
+    with open(fasta_path, 'w') as save_file:
         save_file.write(fasta_record)
 
-    return fasta_record, output_path
+    return fasta_path
     
 
 
-def clustal_omega_MSA(email_address, fasta_path):
+def clustal_omega_MSA(email_address, fasta_path, transcript_id, sequence_type, translation_id):
     """Use the formatted FASTA file from Homologene as input to Clustal Omega
     to create a multiple sequence alignment. Output the MSA as a text file.
 
@@ -265,11 +262,6 @@ def clustal_omega_MSA(email_address, fasta_path):
         print(status)
         if status == "RUNNING":
             time.sleep(10)
-            
-    query_name = 'HOMOLOGUES'
-    current_dir = os.getcwd()
-    path_name = current_dir + '/NP_009229.2'
-    
 
     # Get msa results from Clustal Omega once completed
     msa_request = requests.get(
@@ -278,16 +270,16 @@ def clustal_omega_MSA(email_address, fasta_path):
     msa = (msa_request.content).decode('utf-8')
     
     # Define path to output text file
-    job_name = 'NM_007298.3'
+    job_name = transcript_id
     current_dir = os.getcwd()
-    path_name = current_dir + '/NM_007298.3'
+    path_name = current_dir + '/' + job_name
     
-    if os.path.exists(path_name):
+    if sequence_type == 'Transcript':
         msa_file = job_name + '_msa.aln'
         msa_path = os.path.join(path_name, msa_file)
-    else:
-        msa_file = job_name + '.fasta'
-        msa_path = os.path.join(current_dir, msa_file)
+    elif sequence_type == 'Protein':
+        msa_file = translation_id + '_msa.aln'
+        msa_path = os.path.join(path_name, translation_id, msa_file)
 
     # Write output text file
     with open(msa_path, 'w') as msa_file_object:
@@ -295,7 +287,7 @@ def clustal_omega_MSA(email_address, fasta_path):
     
     return msa
 
-print(">>>>>>>>>>>>>>>>>>>>>>>>>>< Compiling Transcript Dictionary ><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+'''print(">>>>>>>>>>>>>>>>>>>>>>>>>>< Compiling Transcript Dictionary ><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
 
 transcript_id = 'NM_007298.3'
 transcript_dictionary = get_transcript_info(transcript_id)
@@ -305,23 +297,23 @@ print(transcript_dictionary)
 print(">>>>>>>>>>>>>>>>>>< Running Multiple Sequence Alignments through BLASTN ><<<<<<<<<<<<<<<<<<<<<<")
 
 query_sequence_test = transcript_dictionary['cdna']
-blastn, blast_dictionary = blastn_search(query_sequence_test)
-print(blast_dictionary)
+blastn = blastn_search(query_sequence_test, transcript_id)
+print(blastn)
 
-'''print(">>>>>>>>>>>>>>>>>>>>>>>>>>< Getting Protein sequences from BLASTP ><<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+print(">>>>>>>>>>>>>>>>>>>>>>>>>>< Getting Protein sequences from BLASTP ><<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
 
 query_sequence_test = transcript_dictionary['translation']['prot']
-blastp, blast_dictionary = blastp_search(query_sequence_test)
-print(blast_dictionary)'''
+blastp = blastp_search(query_sequence_test, transcript_id, transcript_dictionary['translation']['id'])
+print(blastp)
 
 print(">>>>>>>>>>>>>>>>>>>>>>>< Preparing FASTA of homologous sequences ><<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
 
-top_10_transcripts, fasta_path = top10_hits_fasta(blastn)
+fasta_path = top10_hits_fasta(blastn, transcript_id, 'nucleotide', '')
 print(top_10_transcripts)
 
 print(">>>>>>>>>>>>>>>>>>>>>>>>>>>< Preparing MSA with ClustalOmega ><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
 
 email_address = 'arjunryatt@hotmail.co.uk'
-clustal_omega_MSA(email_address, fasta_path)
+print(clustal_omega_MSA(email_address, fasta_path, transcript_id, 'Transcript', ''))
 
-print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>< End of script. Goodbye! ><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>< End of script. Goodbye! ><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")'''
