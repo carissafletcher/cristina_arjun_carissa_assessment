@@ -35,9 +35,9 @@ Interaction with the MSA tool is through the Swagger UI (user interface). Additi
 The output files are saved to the directory in which the MSA is initiated.
 
 ### **Limitations of the API**
--BLAST search can take a considerable amount of time depending on server load.
--Homologous sequences returned by BLAST may include predicted transripts and protein sequences, prefixed with XM_ and XP_. 
--The MSA output by Clustal Omega is not in .fasta format and so may not be appropriate input for downstream tools.
--This API is not ready for release. Further testing of it's functionality is still required. 
+-BLAST search can take a considerable amount of time depending on server load.\
+-Homologous sequences returned by BLAST may include predicted transripts and protein sequences, prefixed with XM_ and XP_.\
+-The MSA output by Clustal Omega is not in .fasta format and so may not be appropriate input for downstream tools.\
+-This API is not ready for release. Further testing of it's functionality is still required.\ 
 
 *This app was made by Arjun Ryatt, Cristina Garcia Moratalla and Carissa Fletcher-Regez*
