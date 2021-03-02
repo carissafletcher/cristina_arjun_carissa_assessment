@@ -3,7 +3,7 @@
 """
 Introduction to Programming - SPRINT3 Coding Project
 Arjun Ryatt :  10770217
-Carissa Fletcher-Regez :
+Carissa Fletcher-Regez :10603870
 Cristina Garcia Moratalla : 10777695
 
 Given a RefSeq NM_ accession number:
